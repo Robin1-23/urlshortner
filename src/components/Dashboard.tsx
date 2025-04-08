@@ -379,53 +379,68 @@ export function Dashboard() {
         .from('links')
         .select('*')
         .order('created_at', { ascending: false });
-
+  
       if (error) throw error;
       setLinks(data || []);
+      console.log('Links fetched:', data); // ✅ Move this inside the try block
     } catch (error) {
       console.error('Error fetching links:', error);
     } finally {
       setLoading(false);
     }
   }
+  
 
   async function createShortLink(e: React.FormEvent) {
     e.preventDefault();
     if (!url) return;
     setError('');
-
+  
     try {
       setCreating(true);
       const shortCode = customAlias || Math.random().toString(36).substr(2, 6);
-
+  
+      // Check for existing custom alias
       if (customAlias) {
         const { data: existing } = await supabase
           .from('links')
           .select('id')
           .eq('short_code', customAlias)
           .single();
-
+  
         if (existing) {
           setError('This custom alias is already taken');
           setCreating(false);
           return;
         }
       }
-
+  
+      //  Logging user ID
+      const user = (await supabase.auth.getUser()).data.user;
+      console.log('Current user:', user);
+  
+      //  Insert new link into Supabase
       const { error } = await supabase.from('links').insert([
         {
           original_url: url,
           short_code: shortCode,
           expires_at: expiresAt || null,
-          user_id: (await supabase.auth.getUser()).data.user?.id,
+          user_id: user?.id,
         },
       ]);
-
-      if (error) throw error;
+  
+      //  Error check and log
+      if (error) {
+        console.error('Supabase insert error:', error);
+        throw error;
+      }
+  
+      // 👇 Clear input & reload links
       setUrl('');
       setCustomAlias('');
       setExpiresAt('');
       fetchLinks();
+  
     } catch (error) {
       console.error('Error creating short link:', error);
       setError('Failed to create short link');
