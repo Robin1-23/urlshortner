@@ -26,4 +26,5 @@ A simple and efficient URL Shortener web application that allows users to shorte
    npm install
    
 3.Run the development server
+
    npm run dev
